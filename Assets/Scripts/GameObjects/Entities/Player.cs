@@ -45,6 +45,10 @@ namespace Incandescent.GameObjects.Entities
 
         private bool _isJumping;
 
+        // States
+        private const int StNormal = 0;
+        private const int StDash = 1;
+        
         private void Start()
         {
             _coyoteTimer.UpdateAutomatically = false;
@@ -60,7 +64,7 @@ namespace Incandescent.GameObjects.Entities
                 _coyoteTimer.SetTimer(CoyoteTime);
             };
         }
-
+        
         private void Update()
         {
             // Input
