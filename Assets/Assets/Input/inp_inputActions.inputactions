@@ -1,0 +1,261 @@
+{
+    "name": "inp_inputActions",
+    "maps": [
+        {
+            "name": "map_gameplay",
+            "id": "011a5935-03fd-4b64-b76d-927953965e25",
+            "actions": [
+                {
+                    "name": "btn_jump",
+                    "type": "Button",
+                    "id": "15bbac1a-1540-4765-ae87-33a9bef58660",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "btn_dash",
+                    "type": "Button",
+                    "id": "3d127743-ea3b-4bb2-8aa2-9e14e9bc0f35",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "btn_primaryAttack",
+                    "type": "Button",
+                    "id": "d201c327-781d-4c4c-96d9-f4e29f68f0d1",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "btn_seconadryAttack",
+                    "type": "Button",
+                    "id": "3305dd40-48a5-4b4f-809c-716303a60b3e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "axis_horizontal",
+                    "type": "Value",
+                    "id": "e23bf6d7-ff39-45d1-b677-fcd0bcaab2ac",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "axis_vertical",
+                    "type": "Value",
+                    "id": "d8069c97-28ae-437f-96b5-102ac31d0b02",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "fa28e806-ffea-42be-b7aa-fc451d16b6b3",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "btn_jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0e36d15c-5c62-49bd-a91a-e2baa46bb52d",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "btn_dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "80e4bb57-0c62-4c05-873c-d57323505f06",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "btn_primaryAttack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8beb98e4-505d-4381-8713-46ca3ca21587",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "btn_seconadryAttack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "WASD",
+                    "id": "87d48bb8-84ab-426f-913b-0d7ac79b8f7e",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "axis_horizontal",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "6c1e365a-49af-4332-b839-9e78605dc183",
+                    "path": "<Keyboard>/a",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_horizontal",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "fbb9cb45-64e1-454d-8ea8-9658235c30d3",
+                    "path": "<Keyboard>/d",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_horizontal",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Arrows",
+                    "id": "f29d12a6-9f24-4b85-8e00-123ffcb82e4d",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "axis_horizontal",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "33d72163-0d24-463f-8b28-4bf59cc917c6",
+                    "path": "<Keyboard>/leftArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_horizontal",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "be5cccc4-dda5-44f7-b69c-9b7a89eefa34",
+                    "path": "<Keyboard>/rightArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_horizontal",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "WASD",
+                    "id": "2e2cc840-91fa-4b5d-868a-fae56642b54f",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "axis_vertical",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "cc58575d-54cb-40b6-891b-1577e735d9ec",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_vertical",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "7b56ece1-5e8a-416e-92fa-710ef852440c",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_vertical",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Arrows",
+                    "id": "94b3a19d-5706-465c-bb3d-579ec5e2c5d5",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "axis_vertical",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "8286c644-efb8-4c77-97e6-d8879757feb0",
+                    "path": "<Keyboard>/downArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_vertical",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "d5b61995-7eab-4cf6-9c48-71ebd8636cc5",
+                    "path": "<Keyboard>/upArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "axis_vertical",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                }
+            ]
+        }
+    ],
+    "controlSchemes": [
+        {
+            "name": "scheme_PC",
+            "bindingGroup": "scheme_PC",
+            "devices": [
+                {
+                    "devicePath": "<Keyboard>",
+                    "isOptional": false,
+                    "isOR": false
+                },
+                {
+                    "devicePath": "<Mouse>",
+                    "isOptional": false,
+                    "isOR": false
+                }
+            ]
+        }
+    ]
+}

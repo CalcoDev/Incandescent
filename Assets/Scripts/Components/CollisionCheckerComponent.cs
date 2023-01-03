@@ -1,0 +1,92 @@
+﻿using System;
+using Incandescent.Core.Helpers;
+using UnityEngine;
+using UnityEngine.Serialization;
+
+namespace Incandescent.Components
+{
+    public class CollisionCheckerComponent : MonoBehaviour
+    {
+        [Serializable]
+        private class LayerMaskOptional : Optional<LayerMask>
+        {
+            public LayerMaskOptional(LayerMask initialValue) : base(initialValue)
+            {
+            }
+        }
+        
+        [Serializable]
+        private class BitTagOptional : Optional<BitTagAsset>
+        {
+            public BitTagOptional(BitTagAsset initialValue) : base(initialValue)
+            {
+            }
+        }
+        
+        [SerializeField] private bool _isColliding;
+        
+        [SerializeField] private Transform _collisionCheck;
+        [SerializeField] private Vector2 _collisionCheckSize;
+        
+        [SerializeField] private LayerMaskOptional _otherLayer;
+        [SerializeField] private BitTagOptional _otherTag;
+        
+        [SerializeField] private bool _showGroundCheck;
+
+        private bool _wasColliding;
+        
+        public bool IsColliding => _isColliding;
+        public bool WasColliding => _wasColliding;
+        
+        public LayerMask OtherLayer => _otherLayer.Value;
+        public BitTagAsset OtherTag => _otherTag.Value;
+
+        public Action OnEnterGround;
+        public Action OnExitGround;
+
+        private void Update()
+        {
+            Collider2D hit;
+            if (_otherLayer.Enabled)
+                hit = Physics2D.OverlapBox(_collisionCheck.position, _collisionCheckSize, 0f, _otherLayer.Value);
+            else
+                hit = Physics2D.OverlapBox(_collisionCheck.position, _collisionCheckSize, 0f);
+
+            if (hit == null)
+            {
+                _isColliding = false;
+            }
+            else
+            {
+                if (_otherTag.Enabled)
+                {
+                    // TODO(calco): What is this lmao.
+                    BitTagComponent bitTag = hit.GetComponent<BitTagComponent>();
+                    if (bitTag == null)
+                        bitTag = hit.GetComponentInParent<BitTagComponent>();
+                    if (bitTag == null)
+                        bitTag = hit.GetComponentInChildren<BitTagComponent>();
+                    
+                    _isColliding = bitTag.HasTag(_otherTag.Value);
+                }
+                else
+                    _isColliding = true;
+            }
+            
+            if (_isColliding && !_wasColliding)
+                OnEnterGround?.Invoke();
+            else if (!_isColliding && _wasColliding)
+                OnExitGround?.Invoke();
+
+            _wasColliding = _isColliding;
+        }
+        
+        private void OnDrawGizmos()
+        {
+            if (!_showGroundCheck) return;
+            
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(_collisionCheck.position, _collisionCheckSize);
+        }
+    }
+}
