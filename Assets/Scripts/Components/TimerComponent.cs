@@ -55,7 +55,7 @@ namespace Incandescent.Components
         
         public bool HasFinished()
         {
-            return _time == 0f;
+            return Calc.FloatEquals(_time, 0f);
         }
         
         public bool IsRunning()

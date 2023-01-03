@@ -17,6 +17,7 @@ namespace Incandescent.Components
         
         public bool IsGrounded => _isGrounded;
         public bool WasGrounded => _wasGrounded;
+        public LayerMask GroundLayer => _groundLayer;
 
         public Action OnEnterGround;
         public Action OnExitGround;

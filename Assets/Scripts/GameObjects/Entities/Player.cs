@@ -13,6 +13,7 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private TimerComponent _jumpBufferTimer;
         [SerializeField] private TimerComponent _variableJumpTimer;
         [SerializeField] private Rigidbody2D _rb;
+        [SerializeField] private BoxCollider2D _collider;
 
         [Header("Grav")]
         [SerializeField] private float Gravity = 140f;
@@ -27,7 +28,7 @@ namespace Incandescent.GameObjects.Entities
         [Range(0f, 1f)] [SerializeField] private float VariableJumpMultiplier = 0.5f;
         [Range(0f, 5f)] [SerializeField] private float JumpApexControl = 0.2f;
         [Range(0f, 1f)] [SerializeField] private float JumpApexControlMultiplier = 0.5f;
-
+        
         [Header("Run")]
         [SerializeField] private float MaxRunSpeed = 14f;
         [SerializeField] private float RunAccel = 200f;
@@ -40,6 +41,7 @@ namespace Incandescent.GameObjects.Entities
         private float _inputX;
         private bool _inputJumpDown;
         private bool _inputJumpUp;
+        private bool _inputJumpHeld;
 
         private bool _isJumping;
 
@@ -63,8 +65,9 @@ namespace Incandescent.GameObjects.Entities
         {
             // Input
             _inputX = Input.GetAxisRaw("Horizontal");
-            _inputJumpDown = Input.GetButtonDown("Jump");
-            _inputJumpUp = Input.GetButtonUp("Jump");
+            _inputJumpDown = Input.GetKeyDown(KeyCode.Space);
+            _inputJumpUp = Input.GetKeyUp(KeyCode.Space);
+            _inputJumpHeld = Input.GetKey(KeyCode.Space);
 
             // Timers
             if (!_groundedComp.IsGrounded)
@@ -83,7 +86,7 @@ namespace Incandescent.GameObjects.Entities
             {
                 _jumpBufferTimer.SetTimer(0f);
                 _coyoteTimer.SetTimer(0f);
-
+            
                 _isJumping = true;
                 vel.y = JumpForce;
                 
@@ -98,7 +101,7 @@ namespace Incandescent.GameObjects.Entities
                 if (vel.y > 0)
                     vel.y *= VariableJumpMultiplier;
             }
-
+            
             _rb.velocity = vel;
         }
 
@@ -111,7 +114,7 @@ namespace Incandescent.GameObjects.Entities
             if (!grounded)
             {
                 // TODO(calco): Apex control is still a bit finicky.
-                if (_isJumping && Mathf.Abs(vel.y) < JumpApexControl)
+                if (_isJumping && _inputJumpHeld && Mathf.Abs(vel.y) < JumpApexControl)
                 {
                     vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * JumpApexControlMultiplier * Time.deltaTime);
                 }
@@ -125,7 +128,7 @@ namespace Incandescent.GameObjects.Entities
                 accel = RunReduce;
             
             vel.x = Calc.Approach(vel.x, _inputX * MaxRunSpeed, accel * Time.deltaTime);
-            
+
             _rb.velocity = vel;
         }
     }
