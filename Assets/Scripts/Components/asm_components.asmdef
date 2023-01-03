@@ -1,6 +1,8 @@
 {
-    "name": "Components",
-    "references": [],
+    "name": "asm_components",
+    "references": [
+        "GUID:4ef0d128924140b5b3604c203dceae4f"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

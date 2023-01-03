@@ -1,0 +1,27 @@
+{
+    "activeFile": "Tilemaps/tldMap_playground.tmx",
+    "expandedProjectPaths": [
+        ".",
+        "Tilemaps"
+    ],
+    "fileStates": {
+        "Tilemaps/tldMap_playground.tmx": {
+            "scale": 1.8703124999999998,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 39.56558061821221,
+                "y": -28.872180451127804
+            }
+        },
+        "Tilesets/tldSet_graybox.tsx": {
+            "scaleInDock": 1
+        }
+    },
+    "openFiles": [
+        "Tilemaps/tldMap_playground.tmx"
+    ],
+    "project": "tld_incandescent.tiled-project",
+    "recentFiles": [
+        "Tilemaps/tldMap_playground.tmx"
+    ]
+}

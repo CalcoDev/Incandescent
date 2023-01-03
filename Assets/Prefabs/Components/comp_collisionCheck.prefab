@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6978679183003856807}
   - component: {fileID: 6650702227522531796}
   m_Layer: 11
-  m_Name: comp_grounded
+  m_Name: comp_collisionCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -44,12 +44,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64f9b8d5d3114d2099ac8353a2924ece, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isGrounded: 0
-  _groundCheck: {fileID: 2467102458136531615}
-  _groundCheckSize: {x: 1, y: 0.03}
-  _groundLayer:
-    serializedVersion: 2
-    m_Bits: 4096
+  _isColliding: 0
+  _collisionCheck: {fileID: 2467102458136531615}
+  _collisionCheckSize: {x: 1, y: 0.03}
+  _otherLayer:
+    enabled: 0
+    value:
+      serializedVersion: 2
+      m_Bits: 0
+  _otherTag:
+    enabled: 0
+    value: {fileID: 0}
   _showGroundCheck: 1
 --- !u!1 &5434955149206318772
 GameObject:

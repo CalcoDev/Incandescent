@@ -91,7 +91,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _state: 3
-  _context: {fileID: 0}
 --- !u!1 &4992076110373403620
 GameObject:
   m_ObjectHideFlags: 0

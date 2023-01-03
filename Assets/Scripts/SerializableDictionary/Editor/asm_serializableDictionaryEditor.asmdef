@@ -1,0 +1,16 @@
+﻿{
+  "name": "asm_serializableDictionaryEditor",
+  "references": [
+    "asm_serializableDictionary"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": []
+}
