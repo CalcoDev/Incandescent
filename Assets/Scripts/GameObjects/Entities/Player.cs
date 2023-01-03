@@ -11,6 +11,7 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private GroundedComponent _groundedComp;
         [SerializeField] private TimerComponent _coyoteTimer;
         [SerializeField] private TimerComponent _jumpBufferTimer;
+        [SerializeField] private TimerComponent _variableJumpTimer;
         [SerializeField] private Rigidbody2D _rb;
 
         [Header("Grav")]
@@ -19,8 +20,10 @@ namespace Incandescent.GameObjects.Entities
         
         [Header("Jump")]
         [SerializeField] private float JumpForce = 34f;
+        [SerializeField] private float JumpHBoost = 13f;
         [Range(0f, 0.2f)] [SerializeField] private float CoyoteTime = 0.1f;
         [Range(0f, 0.2f)] [SerializeField] private float JumpBufferTime = 0.1f;
+        [Range(0f, 0.2f)] [SerializeField] private float VariableJumpTime = 0.2f;
 
         [Header("Run")]
         [SerializeField] private float MaxRunSpeed = 14f;
@@ -68,6 +71,9 @@ namespace Incandescent.GameObjects.Entities
             if (_inputJumpDown)
                 _jumpBufferTimer.SetTimer(JumpBufferTime);
             
+            if (_isJumping)
+                _variableJumpTimer.UpdateTimer(Time.deltaTime);
+            
             // Jump
             Vector2 vel = _rb.velocity;
             if (_jumpBufferTimer.IsRunning() && _coyoteTimer.IsRunning())
@@ -77,9 +83,14 @@ namespace Incandescent.GameObjects.Entities
 
                 _isJumping = true;
                 vel.y = JumpForce;
+                
+                _variableJumpTimer.SetTimer(VariableJumpTime);
+                vel.x += _inputX * JumpHBoost;
             }
-            if (_inputJumpUp && _isJumping)
+            // Variable Jump
+            if (_variableJumpTimer.IsRunning() && _inputJumpUp)
             {
+                _variableJumpTimer.SetTimer(0f);
                 _isJumping = false;
                 if (vel.y > 0)
                     vel.y *= .5f;
