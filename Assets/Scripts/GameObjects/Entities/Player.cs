@@ -82,11 +82,6 @@ namespace Incandescent.GameObjects.Entities
         private void Update()
         {
             // Input
-            // _inputX = Input.GetAxisRaw("Horizontal");
-            // _inputJumpDown = Input.GetKeyDown(KeyCode.Space);
-            // _inputJumpUp = Input.GetKeyUp(KeyCode.Space);
-            // _inputJumpHeld = Input.GetKey(KeyCode.Space);
-
             _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
             _inputJumpDown = _inputActions.map_gameplay.btn_jump.WasPressedThisFrame();
             _inputJumpUp = _inputActions.map_gameplay.btn_jump.WasReleasedThisFrame();
