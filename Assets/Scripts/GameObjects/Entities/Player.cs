@@ -1,6 +1,7 @@
 ﻿using System;
 using Incandescent.Components;
 using Incandescent.Core.Helpers;
+using Incandescent.Managers.Inputs.Generated;
 using UnityEngine;
 
 namespace Incandescent.GameObjects.Entities
@@ -38,12 +39,29 @@ namespace Incandescent.GameObjects.Entities
         private const float VelocityThreshold = .05f;
 
         // Input
+        private InputActions _inputActions;
+        
         private float _inputX;
         private bool _inputJumpDown;
         private bool _inputJumpUp;
         private bool _inputJumpHeld;
 
         private bool _isJumping;
+
+        // States
+        private const int StNormal = 0;
+        private const int StDash = 1;
+
+        private void Awake()
+        {
+            _inputActions = new InputActions();
+            _inputActions.Enable();
+        }
+
+        private void OnDisable()
+        {
+            _inputActions.Disable();
+        }
 
         private void Start()
         {
@@ -60,14 +78,14 @@ namespace Incandescent.GameObjects.Entities
                 _coyoteTimer.SetTimer(CoyoteTime);
             };
         }
-
+        
         private void Update()
         {
             // Input
-            _inputX = Input.GetAxisRaw("Horizontal");
-            _inputJumpDown = Input.GetKeyDown(KeyCode.Space);
-            _inputJumpUp = Input.GetKeyUp(KeyCode.Space);
-            _inputJumpHeld = Input.GetKey(KeyCode.Space);
+            _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
+            _inputJumpDown = _inputActions.map_gameplay.btn_jump.WasPressedThisFrame();
+            _inputJumpUp = _inputActions.map_gameplay.btn_jump.WasReleasedThisFrame();
+            _inputJumpHeld = _inputActions.map_gameplay.btn_jump.IsPressed();
 
             // Timers
             if (!_groundedComp.IsGrounded)

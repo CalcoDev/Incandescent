@@ -2,7 +2,7 @@
 
 namespace Incandescent.Components
 {
-    [CreateAssetMenu(fileName = "Bit Tag", menuName = "Incandescent/Bit Tag", order = 0)]
+    [CreateAssetMenu(fileName = "Bit Tag", menuName = "Incandescent/Components/Bit Tag", order = 0)]
     public class BitTagAsset : ScriptableObject
     {
         [SerializeField] private string _tag;
