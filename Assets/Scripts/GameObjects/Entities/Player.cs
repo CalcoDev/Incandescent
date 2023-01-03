@@ -24,6 +24,9 @@ namespace Incandescent.GameObjects.Entities
         [Range(0f, 0.2f)] [SerializeField] private float CoyoteTime = 0.1f;
         [Range(0f, 0.2f)] [SerializeField] private float JumpBufferTime = 0.1f;
         [Range(0f, 0.2f)] [SerializeField] private float VariableJumpTime = 0.2f;
+        [Range(0f, 1f)] [SerializeField] private float VariableJumpMultiplier = 0.5f;
+        [Range(0f, 5f)] [SerializeField] private float JumpApexControl = 0.2f;
+        [Range(0f, 1f)] [SerializeField] private float JumpApexControlMultiplier = 0.5f;
 
         [Header("Run")]
         [SerializeField] private float MaxRunSpeed = 14f;
@@ -93,7 +96,7 @@ namespace Incandescent.GameObjects.Entities
                 _variableJumpTimer.SetTimer(0f);
                 _isJumping = false;
                 if (vel.y > 0)
-                    vel.y *= .5f;
+                    vel.y *= VariableJumpMultiplier;
             }
 
             _rb.velocity = vel;
@@ -106,7 +109,15 @@ namespace Incandescent.GameObjects.Entities
             
             // Gravity
             if (!grounded)
-                vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * Time.deltaTime);
+            {
+                // TODO(calco): Apex control is still a bit finicky.
+                if (_isJumping && Mathf.Abs(vel.y) < JumpApexControl)
+                {
+                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * JumpApexControlMultiplier * Time.deltaTime);
+                }
+                else
+                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * Time.deltaTime);
+            }
             
             // Horizontal
             float accel = RunAccel;
