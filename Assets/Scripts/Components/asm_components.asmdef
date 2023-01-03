@@ -1,6 +1,8 @@
 {
     "name": "Components",
-    "references": [],
+    "references": [
+        "GUID:4ef0d128924140b5b3604c203dceae4f"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

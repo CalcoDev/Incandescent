@@ -1,6 +1,6 @@
 ﻿using System;
 using Incandescent.Components;
-using Incandescent.Helpers;
+using Incandescent.Core.Helpers;
 using UnityEngine;
 
 namespace Incandescent.GameObjects.Entities
@@ -40,15 +40,16 @@ namespace Incandescent.GameObjects.Entities
         private void Start()
         {
             _coyoteTimer.UpdateAutomatically = false;
-
+            
             _groundedComp.OnEnterGround += () =>
             {
+                _coyoteTimer.SetTimer(CoyoteTime);
                 _isJumping = false;
-                _coyoteTimer.ResetTimer();
             };
             
             _groundedComp.OnExitGround += () =>
             {
+                _coyoteTimer.SetTimer(CoyoteTime);
             };
         }
 
@@ -65,14 +66,14 @@ namespace Incandescent.GameObjects.Entities
             
             _jumpBufferTimer.UpdateTimer(Time.deltaTime);
             if (_inputJumpDown)
-                _jumpBufferTimer.ResetTimer();
+                _jumpBufferTimer.SetTimer(JumpBufferTime);
             
             // Jump
             Vector2 vel = _rb.velocity;
-            if (_jumpBufferTimer.Time < JumpBufferTime && _coyoteTimer.Time < CoyoteTime)
+            if (_jumpBufferTimer.IsRunning() && _coyoteTimer.IsRunning())
             {
-                _jumpBufferTimer.SetTimer(JumpBufferTime);
-                _coyoteTimer.SetTimer(CoyoteTime);
+                _jumpBufferTimer.SetTimer(0f);
+                _coyoteTimer.SetTimer(0f);
 
                 _isJumping = true;
                 vel.y = JumpForce;
