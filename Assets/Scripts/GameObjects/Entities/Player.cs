@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using Incandescent.Components;
 using Incandescent.Core.Helpers;
 using Incandescent.Managers.Inputs.Generated;
@@ -9,12 +10,14 @@ namespace Incandescent.GameObjects.Entities
     public class Player : MonoBehaviour
     {
         [Header("Refs")]
-        [SerializeField] private GroundedComponent _groundedComp;
+        [SerializeField] private CollisionCheckerComponent _groundedComp;
+        [SerializeField] private CollisionCheckerComponent _collidingWithGroundComp;
         [SerializeField] private TimerComponent _coyoteTimer;
         [SerializeField] private TimerComponent _jumpBufferTimer;
         [SerializeField] private TimerComponent _variableJumpTimer;
+        [SerializeField] private TimerComponent _dashCooldownTimer;
+        [SerializeField] private StateMachineComponent _stateMachine;
         [SerializeField] private Rigidbody2D _rb;
-        [SerializeField] private BoxCollider2D _collider;
 
         [Header("Grav")]
         [SerializeField] private float Gravity = 140f;
@@ -29,14 +32,16 @@ namespace Incandescent.GameObjects.Entities
         [Range(0f, 1f)] [SerializeField] private float VariableJumpMultiplier = 0.5f;
         [Range(0f, 5f)] [SerializeField] private float JumpApexControl = 0.2f;
         [Range(0f, 1f)] [SerializeField] private float JumpApexControlMultiplier = 0.5f;
-        
+
         [Header("Run")]
         [SerializeField] private float MaxRunSpeed = 14f;
         [SerializeField] private float RunAccel = 200f;
         [SerializeField] private float RunReduce = 62f;
-
-        private const float InputThreshold = .05f;
-        private const float VelocityThreshold = .05f;
+        
+        [Header("Dash")]
+        [SerializeField] private float DashCooldown = 0.2f;
+        [SerializeField] private float DashSpeed = 38;
+        [SerializeField] private float DashTime = 0.15f;
 
         // Input
         private InputActions _inputActions;
@@ -45,17 +50,25 @@ namespace Incandescent.GameObjects.Entities
         private bool _inputJumpDown;
         private bool _inputJumpUp;
         private bool _inputJumpHeld;
-
-        private bool _isJumping;
+        
+        private bool _inputDashDown;
 
         // States
         private const int StNormal = 0;
         private const int StDash = 1;
 
+        private bool _isJumping;
+
+        private Vector2 _dashDir;
+        
         private void Awake()
         {
             _inputActions = new InputActions();
             _inputActions.Enable();
+            
+            _stateMachine.Init(3, 0);
+            _stateMachine.SetCallbacks(StNormal, NormalUpdate, null, null, NormalFixedUpdate);
+            _stateMachine.SetCallbacks(StDash, DashUpdate, DashEnter, DashExit, null, DashCoroutine);
         }
 
         private void OnDisable()
@@ -70,6 +83,7 @@ namespace Incandescent.GameObjects.Entities
             _groundedComp.OnEnterGround += () =>
             {
                 _coyoteTimer.SetTimer(CoyoteTime);
+                _dashCooldownTimer.SetTimer(0f);
                 _isJumping = false;
             };
             
@@ -81,14 +95,40 @@ namespace Incandescent.GameObjects.Entities
         
         private void Update()
         {
-            // Input
+            PollInput();
+            
+            int st = _stateMachine.RunUpdate();
+            _stateMachine.SetState(st);
+        }
+
+        private void FixedUpdate()
+        {
+            _stateMachine.RunFixedUpdate();
+        }
+        
+        private void PollInput()
+        {
             _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
+            
             _inputJumpDown = _inputActions.map_gameplay.btn_jump.WasPressedThisFrame();
             _inputJumpUp = _inputActions.map_gameplay.btn_jump.WasReleasedThisFrame();
             _inputJumpHeld = _inputActions.map_gameplay.btn_jump.IsPressed();
+            
+            _inputDashDown = _inputActions.map_gameplay.btn_dash.WasPressedThisFrame();
+        }
 
+        #region States
+
+        private int NormalUpdate()
+        {
+            // State Changes
+            if (_inputDashDown && _dashCooldownTimer.HasFinished())
+                return StDash;
+            
             // Timers
-            if (!_groundedComp.IsGrounded)
+            _dashCooldownTimer.UpdateTimer(Time.deltaTime);
+            
+            if (!_groundedComp.IsColliding)
                 _coyoteTimer.UpdateTimer(Time.deltaTime);
             
             _jumpBufferTimer.UpdateTimer(Time.deltaTime);
@@ -121,12 +161,14 @@ namespace Incandescent.GameObjects.Entities
             }
             
             _rb.velocity = vel;
+            
+            return StNormal;
         }
-
-        private void FixedUpdate()
+        
+        private void NormalFixedUpdate()
         {
             Vector2 vel = _rb.velocity;
-            bool grounded = _groundedComp.IsGrounded;
+            bool grounded = _groundedComp.IsColliding;
             
             // Gravity
             if (!grounded)
@@ -134,10 +176,10 @@ namespace Incandescent.GameObjects.Entities
                 // TODO(calco): Apex control is still a bit finicky.
                 if (_isJumping && _inputJumpHeld && Mathf.Abs(vel.y) < JumpApexControl)
                 {
-                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * JumpApexControlMultiplier * Time.deltaTime);
+                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * JumpApexControlMultiplier * Time.fixedDeltaTime);
                 }
                 else
-                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * Time.deltaTime);
+                    vel.y = Calc.Approach(vel.y, -MaxFall, Gravity * Time.fixedDeltaTime);
             }
             
             // Horizontal
@@ -145,9 +187,49 @@ namespace Incandescent.GameObjects.Entities
             if (Mathf.Abs(vel.x) > MaxRunSpeed && Calc.SameSign(_rb.velocity.x, _inputX))
                 accel = RunReduce;
             
-            vel.x = Calc.Approach(vel.x, _inputX * MaxRunSpeed, accel * Time.deltaTime);
+            vel.x = Calc.Approach(vel.x, _inputX * MaxRunSpeed, accel * Time.fixedDeltaTime);
 
             _rb.velocity = vel;
         }
+
+        private void DashEnter()
+        {
+            _rb.velocity = Vector2.zero;
+            _dashDir = new Vector2(_inputX, 0f).normalized;
+        }
+
+        private int DashUpdate()
+        {
+            if (_collidingWithGroundComp.IsColliding)
+                return StNormal;
+
+            return StDash;
+        }
+
+        private void DashExit()
+        {
+            _dashCooldownTimer.SetTimer(DashCooldown);
+        }
+
+        private IEnumerator DashCoroutine()
+        {
+            yield return null;
+
+            Vector2 speed = _dashDir * DashSpeed;
+            Vector2 vel = _rb.velocity;
+            // Dashing in same dir as momentum and already going faster
+            if (Calc.SameSign(vel.x, speed.x) && Mathf.Abs(vel.x) > Mathf.Abs(speed.x))
+                speed.x = vel.x;
+
+            _rb.velocity = speed;
+            
+            // TODO(calco): Camera shake
+
+            yield return new WaitForSeconds(DashTime);
+
+            _stateMachine.SetState(StNormal);
+        }
+
+        #endregion
     }
 }

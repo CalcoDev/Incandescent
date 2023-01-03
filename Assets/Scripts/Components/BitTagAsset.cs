@@ -7,6 +7,7 @@ namespace Incandescent.Components
     {
         [SerializeField] private string _tag;
         
+        // TODO(calco): Actually set this at runtime lmao.
         [Tooltip("DO NOT EDIT. SET INTERNALLY AT RUNTIME")]
         [SerializeField] private int _id;
         
