@@ -16,23 +16,18 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private CollisionCheckerComponent _collidingWithGroundComp;
         [SerializeField] private CollisionCheckerComponent _collidingWithCeilingComp;
         
-        [SerializeField] private TimerComponent _coyoteTimer;
-        [SerializeField] private TimerComponent _jumpBufferTimer;
-        [SerializeField] private TimerComponent _variableJumpTimer;
-        [SerializeField] private TimerComponent _dashCooldownTimer;
         [SerializeField] private StateMachineComponent _stateMachine;
         [SerializeField] private Rigidbody2D _rb;
 
-        [Header("FX")]
-        [SerializeField] private ParticleSystem _dashFx;
-        [SerializeField] private ParticleSystem _dashTrailFx;
-        [SerializeField] private TrailRenderer _dashTrail;
-        
         [Header("Grav")]
         [SerializeField] private float Gravity = 140f;
         [SerializeField] private float MaxFall = 25f;
         
         [Header("Jump")]
+        [SerializeField] private TimerComponent _coyoteTimer;
+        [SerializeField] private TimerComponent _jumpBufferTimer;
+        [SerializeField] private TimerComponent _variableJumpTimer;
+        
         [SerializeField] private float JumpForce = 34f;
         [SerializeField] private float JumpHBoost = 13f;
         [Range(0f, 0.2f)] [SerializeField] private float CoyoteTime = 0.1f;
@@ -48,11 +43,23 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private float RunReduce = 62f;
         
         [Header("Dash")]
+        [SerializeField] private TimerComponent _dashCooldownTimer;
+
+        [SerializeField] private ParticleSystem _dashFx;
+        [SerializeField] private ParticleSystem _dashTrailFx;
+        [SerializeField] private TrailRenderer _dashTrail;
+        
         [SerializeField] private float DashCooldown = 0.2f;
         [SerializeField] private float DashSpeed = 38;
         [SerializeField] private float DashTime = 0.15f;
         
         [Header("Leap")]
+        [SerializeField] private ParticleSystem _leapAttackFx;
+        [SerializeField] private TrailRenderer _leapAttackTrail;
+        [SerializeField] private ParticleSystem _leapSustainFx;
+        [SerializeField] private ParticleSystem _leapPerformFx;
+        [SerializeField] private TrailRenderer _leapPerformTrail;
+
         [SerializeField] private float LeapSustainTime = 2f;
         [SerializeField] private float LeapAttackSpeed = 20f;
         [SerializeField] private float LeapPerformSpeed = 30f;
@@ -74,16 +81,23 @@ namespace Incandescent.GameObjects.Entities
 
         private Vector2 _inputMousePos;
 
+        private Vector2 _lastNonZeroDir = Vector2.right;
+
         // States
         private const int StNormal = 0;
         private const int StDash = 1;
         private const int StLeap = 2;
-
+        
         private bool _isJumping;
 
-        private Vector2 _lastNonZeroDir = Vector2.right;
+        // Dash
         private Vector2 _dashDir;
         private bool _groundDash;
+        
+        // Leap
+        private bool _leapAttack;
+        private bool _leapSustain;
+        private bool _leapPerformed;
 
         private void Awake()
         {
@@ -299,10 +313,6 @@ namespace Incandescent.GameObjects.Entities
             _stateMachine.SetState(StNormal);
         }
 
-        private bool _leapAttack;
-        private bool _leapSustain;
-        private bool _leapPerformed;
-        
         private void LeapEnter()
         {
             _rb.velocity = Vector2.zero;
@@ -323,6 +333,11 @@ namespace Incandescent.GameObjects.Entities
             
             // Go straight up 8 units, or until we hit something
             _leapAttack = true;
+
+            var emissionModule = _leapAttackFx.emission;
+            emissionModule.enabled = true;
+            _leapAttackTrail.emitting = true;
+            
             Vector2 targetPos = _rb.position + Vector2.up * 8f;
             _rb.velocity = Vector2.up * LeapAttackSpeed;
             
@@ -338,9 +353,14 @@ namespace Incandescent.GameObjects.Entities
             }
 
             _rb.velocity = Vector2.zero;
+            
             _leapAttack = false;
+            emissionModule.enabled = false;
+            _leapAttackTrail.emitting = false;
             
             _leapSustain = true;
+            emissionModule = _leapSustainFx.emission;
+            emissionModule.enabled = true;
             
             float time = 0f;
             bool used = false;
@@ -362,7 +382,12 @@ namespace Incandescent.GameObjects.Entities
             }
 
             _leapSustain = false;
+            emissionModule.enabled = false;
+            
             _leapPerformed = true;
+            emissionModule = _leapPerformFx.emission;
+            emissionModule.enabled = true;
+            _leapPerformTrail.emitting = true;
 
             Vector2 dir = (_inputMousePos - _rb.position).normalized;
             _lastNonZeroDir = new Vector2(dir.x, 0f).normalized;
@@ -387,6 +412,9 @@ namespace Incandescent.GameObjects.Entities
             _rb.velocity *= LeapEndSpeedMultiplier;
             
             _leapPerformed = false;
+            emissionModule.enabled = false;
+            _leapPerformTrail.emitting = false;
+            
             _stateMachine.SetState(StNormal);
         }
 
