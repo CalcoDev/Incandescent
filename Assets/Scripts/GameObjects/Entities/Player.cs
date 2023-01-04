@@ -14,6 +14,8 @@ namespace Incandescent.GameObjects.Entities
         [Header("Refs")]
         [SerializeField] private CollisionCheckerComponent _groundedComp;
         [SerializeField] private CollisionCheckerComponent _collidingWithGroundComp;
+        [SerializeField] private CollisionCheckerComponent _collidingWithCeilingComp;
+        
         [SerializeField] private TimerComponent _coyoteTimer;
         [SerializeField] private TimerComponent _jumpBufferTimer;
         [SerializeField] private TimerComponent _variableJumpTimer;
@@ -49,6 +51,13 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private float DashCooldown = 0.2f;
         [SerializeField] private float DashSpeed = 38;
         [SerializeField] private float DashTime = 0.15f;
+        
+        [Header("Leap")]
+        [SerializeField] private float LeapSustainTime = 2f;
+        [SerializeField] private float LeapAttackSpeed = 20f;
+        [SerializeField] private float LeapPerformSpeed = 30f;
+        [SerializeField] private float LeapPerformDistance = 5f;
+        [Range(0f, 1f)] [SerializeField] private float LeapEndSpeedMultiplier = 0.25f;
 
         // Input
         private InputActions _inputActions;
@@ -60,9 +69,15 @@ namespace Incandescent.GameObjects.Entities
         
         private bool _inputDashDown;
 
+        private bool _inputPrimaryDown;
+        private bool _inputSecondaryDown;
+
+        private Vector2 _inputMousePos;
+
         // States
         private const int StNormal = 0;
         private const int StDash = 1;
+        private const int StLeap = 2;
 
         private bool _isJumping;
 
@@ -78,6 +93,7 @@ namespace Incandescent.GameObjects.Entities
             _stateMachine.Init(3, 0);
             _stateMachine.SetCallbacks(StNormal, NormalUpdate, null, null, NormalFixedUpdate);
             _stateMachine.SetCallbacks(StDash, DashUpdate, DashEnter, DashExit, null, DashCoroutine);
+            _stateMachine.SetCallbacks(StLeap, null, LeapEnter, LeapExit, null, LeapCoroutine);
         }
 
         private void OnDisable()
@@ -134,6 +150,12 @@ namespace Incandescent.GameObjects.Entities
             _inputJumpHeld = _inputActions.map_gameplay.btn_jump.IsPressed();
             
             _inputDashDown = _inputActions.map_gameplay.btn_dash.WasPressedThisFrame();
+            
+            _inputPrimaryDown = _inputActions.map_gameplay.btn_primaryAttack.WasPressedThisFrame();
+            _inputSecondaryDown = _inputActions.map_gameplay.btn_seconadryAttack.WasPressedThisFrame();
+
+            Vector2 mouseScreenPos = _inputActions.map_gameplay.pos_mouse.ReadValue<Vector2>();
+            _inputMousePos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
         }
 
         #region States
@@ -144,6 +166,12 @@ namespace Incandescent.GameObjects.Entities
             if (_inputDashDown && _dashCooldownTimer.HasFinished())
                 return StDash;
             
+            if (_inputPrimaryDown)
+                Debug.Log("Primary");
+
+            if (_inputSecondaryDown)
+                return StLeap;
+
             // Timers
             _dashCooldownTimer.UpdateTimer(Time.deltaTime);
             
@@ -268,6 +296,97 @@ namespace Incandescent.GameObjects.Entities
             // TODO(calco): Camera shake
             yield return new WaitForSeconds(DashTime);
 
+            _stateMachine.SetState(StNormal);
+        }
+
+        private bool _leapAttack;
+        private bool _leapSustain;
+        private bool _leapPerformed;
+        
+        private void LeapEnter()
+        {
+            _rb.velocity = Vector2.zero;
+
+            _leapAttack = false;
+            _leapSustain = false;
+            _leapPerformed = false;
+        }
+
+        private void LeapExit()
+        {
+            
+        }
+        
+        private IEnumerator LeapCoroutine()
+        {
+            yield return null;
+            
+            // Go straight up 8 units, or until we hit something
+            _leapAttack = true;
+            Vector2 targetPos = _rb.position + Vector2.up * 8f;
+            _rb.velocity = Vector2.up * LeapAttackSpeed;
+            
+            while (_rb.position.y < targetPos.y)
+            {
+                if (_collidingWithCeilingComp.IsColliding)
+                {
+                    Debug.Log("Collided with ceiling.");
+                    break;
+                }
+
+                yield return null;
+            }
+
+            _rb.velocity = Vector2.zero;
+            _leapAttack = false;
+            
+            _leapSustain = true;
+            
+            float time = 0f;
+            bool used = false;
+            while (time < LeapSustainTime)
+            {
+                if (_inputPrimaryDown)
+                {
+                    used = true;
+                    break;
+                }
+
+                time += Time.deltaTime;
+                yield return null;
+            }
+            if (!used)
+            {
+                _stateMachine.SetState(StNormal);
+                yield break;
+            }
+
+            _leapSustain = false;
+            _leapPerformed = true;
+
+            Vector2 dir = (_inputMousePos - _rb.position).normalized;
+            _lastNonZeroDir = new Vector2(dir.x, 0f).normalized;
+            
+            _rb.velocity = dir * LeapPerformSpeed;
+
+            targetPos = _rb.position + dir * LeapPerformDistance;
+            while ((targetPos - _rb.position).sqrMagnitude > 0.1f)
+            {
+                if (_collidingWithGroundComp.IsColliding)
+                {
+                    // Check if the collision is in the direction we're moving
+                    Vector2 collisionNormal = _collidingWithGroundComp.CollisionNormal;
+                    Debug.Log(collisionNormal);
+                    if (Calc.SameSign(collisionNormal.x, dir.x) || Calc.SameSign(collisionNormal.y, dir.y))
+                        break;
+                }
+
+                yield return null;
+            }
+            
+            _rb.velocity *= LeapEndSpeedMultiplier;
+            
+            _leapPerformed = false;
             _stateMachine.SetState(StNormal);
         }
 

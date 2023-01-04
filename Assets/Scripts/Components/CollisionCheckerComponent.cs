@@ -33,6 +33,8 @@ namespace Incandescent.Components
         
         [SerializeField] private bool _showGroundCheck;
 
+        private Vector2 _collisionNormal;
+        
         private bool _wasColliding;
         
         public bool IsColliding => _isColliding;
@@ -40,6 +42,8 @@ namespace Incandescent.Components
         
         public LayerMask OtherLayer => _otherLayer.Value;
         public BitTagAsset OtherTag => _otherTag.Value;
+
+        public Vector2 CollisionNormal => _collisionNormal;
 
         public Action OnEnterGround;
         public Action OnExitGround;
@@ -55,9 +59,13 @@ namespace Incandescent.Components
             if (hit == null)
             {
                 _isColliding = false;
+                _collisionNormal = Vector2.zero;
             }
             else
             {
+                // Figure out the collision normal
+                _collisionNormal = hit.ClosestPoint(_collisionCheck.position) - (Vector2) _collisionCheck.position;
+                
                 if (_otherTag.Enabled)
                 {
                     // TODO(calco): What is this lmao.
