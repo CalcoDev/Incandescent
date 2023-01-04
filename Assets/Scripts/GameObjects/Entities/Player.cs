@@ -4,6 +4,7 @@ using Incandescent.Components;
 using Incandescent.Core.Helpers;
 using Incandescent.Managers.Inputs.Generated;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Incandescent.GameObjects.Entities
 {
@@ -19,6 +20,11 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private StateMachineComponent _stateMachine;
         [SerializeField] private Rigidbody2D _rb;
 
+        [Header("FX")]
+        [SerializeField] private ParticleSystem _dashFx;
+        [SerializeField] private ParticleSystem _dashTrailFx;
+        [SerializeField] private TrailRenderer _dashTrail;
+        
         [Header("Grav")]
         [SerializeField] private float Gravity = 140f;
         [SerializeField] private float MaxFall = 25f;
@@ -59,8 +65,9 @@ namespace Incandescent.GameObjects.Entities
 
         private bool _isJumping;
 
+        private Vector2 _lastNonZeroDir = Vector2.right;
         private Vector2 _dashDir;
-        
+
         private void Awake()
         {
             _inputActions = new InputActions();
@@ -78,6 +85,13 @@ namespace Incandescent.GameObjects.Entities
 
         private void Start()
         {
+            var dashParticlesEmission = _dashFx.emission;
+            var emissionModule = _dashTrailFx.emission;
+
+            dashParticlesEmission.enabled = false;
+            emissionModule.enabled = false;
+            _dashTrail.emitting = false;
+
             _coyoteTimer.UpdateAutomatically = false;
             
             _groundedComp.OnEnterGround += () =>
@@ -109,6 +123,9 @@ namespace Incandescent.GameObjects.Entities
         private void PollInput()
         {
             _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
+
+            if (!Calc.FloatEquals(_inputX, 0f))
+                _lastNonZeroDir.x = _inputX;
             
             _inputJumpDown = _inputActions.map_gameplay.btn_jump.WasPressedThisFrame();
             _inputJumpUp = _inputActions.map_gameplay.btn_jump.WasReleasedThisFrame();
@@ -195,7 +212,15 @@ namespace Incandescent.GameObjects.Entities
         private void DashEnter()
         {
             _rb.velocity = Vector2.zero;
-            _dashDir = new Vector2(_inputX, 0f).normalized;
+            _dashDir = Vector2.zero;
+
+            var dashParticlesEmission = _dashFx.emission;
+            dashParticlesEmission.enabled = true;
+
+            var emissionModule = _dashTrailFx.emission;
+            emissionModule.enabled = true;
+            
+            _dashTrail.emitting = true;
         }
 
         private int DashUpdate()
@@ -209,14 +234,25 @@ namespace Incandescent.GameObjects.Entities
         private void DashExit()
         {
             _dashCooldownTimer.SetTimer(DashCooldown);
+            
+            var dashParticlesEmission = _dashFx.emission;
+            dashParticlesEmission.enabled = false;
+            
+            var emissionModule = _dashTrailFx.emission;
+            emissionModule.enabled = false;
+
+            _dashTrail.emitting = false;
         }
 
         private IEnumerator DashCoroutine()
         {
             yield return null;
 
+            _dashDir = _lastNonZeroDir;
+            
             Vector2 speed = _dashDir * DashSpeed;
             Vector2 vel = _rb.velocity;
+            
             // Dashing in same dir as momentum and already going faster
             if (Calc.SameSign(vel.x, speed.x) && Mathf.Abs(vel.x) > Mathf.Abs(speed.x))
                 speed.x = vel.x;
