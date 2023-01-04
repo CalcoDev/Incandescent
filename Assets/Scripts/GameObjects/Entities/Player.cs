@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using Cinemachine;
 using Incandescent.Components;
 using Incandescent.Core.Helpers;
@@ -13,7 +14,6 @@ namespace Incandescent.GameObjects.Entities
     {
         [Header("Refs")]
         [SerializeField] private CollisionCheckerComponent _groundedComp;
-        [SerializeField] private CollisionCheckerComponent _collidingWithGroundComp;
         [SerializeField] private CollisionCheckerComponent _collidingWithCeilingComp;
         
         [SerializeField] private StateMachineComponent _stateMachine;
@@ -99,6 +99,9 @@ namespace Incandescent.GameObjects.Entities
         private bool _leapSustain;
         private bool _leapPerformed;
 
+        private bool _collidingWithGroundOnAnySide;
+        private Vector2 _collisionNormal;
+
         private void Awake()
         {
             _inputActions = new InputActions();
@@ -107,7 +110,7 @@ namespace Incandescent.GameObjects.Entities
             _stateMachine.Init(3, 0);
             _stateMachine.SetCallbacks(StNormal, NormalUpdate, null, null, NormalFixedUpdate);
             _stateMachine.SetCallbacks(StDash, DashUpdate, DashEnter, DashExit, null, DashCoroutine);
-            _stateMachine.SetCallbacks(StLeap, null, LeapEnter, LeapExit, null, LeapCoroutine);
+            _stateMachine.SetCallbacks(StLeap, null, LeapEnter, null, null, LeapCoroutine);
         }
 
         private void OnDisable()
@@ -151,7 +154,44 @@ namespace Incandescent.GameObjects.Entities
         {
             _stateMachine.RunFixedUpdate();
         }
-        
+
+        private void OnCollisionEnter2D(Collision2D col)
+        {
+            BitTagComponent bitTag = col.gameObject.GetComponent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = col.gameObject.GetComponentInParent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = col.gameObject.GetComponentInChildren<BitTagComponent>();
+
+            if (bitTag == null)
+                return;
+            
+            _collidingWithGroundOnAnySide = bitTag.HasTagString("Ground");
+
+            Collider2D b = col.otherCollider;
+            Collider2D a = col.collider;
+            ColliderDistance2D d = a.Distance(b);
+            _collisionNormal = d.normal;
+        }
+
+        private void OnCollisionExit2D(Collision2D other)
+        {
+            BitTagComponent bitTag = other.gameObject.GetComponent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = other.gameObject.GetComponentInParent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = other.gameObject.GetComponentInChildren<BitTagComponent>();
+
+            if (bitTag == null)
+                return;
+
+            if (!bitTag.HasTagString("Ground"))
+                return;
+            
+            _collidingWithGroundOnAnySide = false;
+            _collisionNormal = Vector2.zero;
+        }
+
         private void PollInput()
         {
             _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
@@ -273,7 +313,7 @@ namespace Incandescent.GameObjects.Entities
 
         private int DashUpdate()
         {
-            if (_collidingWithGroundComp.IsColliding && !(_groundedComp.IsColliding && _groundDash))
+            if (_collidingWithGroundOnAnySide && !(_groundedComp.IsColliding && _groundDash))
                 return StNormal;
 
             return StDash;
@@ -322,11 +362,6 @@ namespace Incandescent.GameObjects.Entities
             _leapPerformed = false;
         }
 
-        private void LeapExit()
-        {
-            
-        }
-        
         private IEnumerator LeapCoroutine()
         {
             yield return null;
@@ -389,21 +424,24 @@ namespace Incandescent.GameObjects.Entities
             emissionModule.enabled = true;
             _leapPerformTrail.emitting = true;
 
-            Vector2 dir = (_inputMousePos - _rb.position).normalized;
+            Vector2 dir = (_inputMousePos - _rb.position - Vector2.up).normalized;
+            dir = dir.normalized;
             _lastNonZeroDir = new Vector2(dir.x, 0f).normalized;
             
             _rb.velocity = dir * LeapPerformSpeed;
 
             targetPos = _rb.position + dir * LeapPerformDistance;
-            while ((targetPos - _rb.position).sqrMagnitude > 0.1f)
+            while ((targetPos - _rb.position).sqrMagnitude > 1f)
             {
-                if (_collidingWithGroundComp.IsColliding)
+                if (_collidingWithGroundOnAnySide)
                 {
-                    // Check if the collision is in the direction we're moving
-                    Vector2 collisionNormal = _collidingWithGroundComp.CollisionNormal;
-                    Debug.Log(collisionNormal);
-                    if (Calc.SameSign(collisionNormal.x, dir.x) || Calc.SameSign(collisionNormal.y, dir.y))
+                    Debug.Log($"Normal: {_collisionNormal} | Dir: {dir}");
+                    
+                    if (Calc.SameSignZero(_collisionNormal.x, dir.x) || Calc.SameSignZero(_collisionNormal.y, dir.y))
+                    {
+                        Debug.Log("Collided with ground.");
                         break;
+                    }
                 }
 
                 yield return null;

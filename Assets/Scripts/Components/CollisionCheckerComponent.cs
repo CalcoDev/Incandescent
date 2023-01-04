@@ -5,6 +5,7 @@ using UnityEngine.Serialization;
 
 namespace Incandescent.Components
 {
+    // TODO(CALCO): THIS IS BROKEN. IN BOX2D TRIGGERS REQUIRE 2 FRAMES OF OVERLAP TO WORK. THUS, THIS WON'T WORK FOR FRAME PERFECT COLLISIONS.
     public class CollisionCheckerComponent : MonoBehaviour
     {
         [Serializable]
@@ -25,13 +26,10 @@ namespace Incandescent.Components
         
         [SerializeField] private bool _isColliding;
         
-        [SerializeField] private Transform _collisionCheck;
-        [SerializeField] private Vector2 _collisionCheckSize;
+        [SerializeField] private BoxCollider2D _coll;
         
         [SerializeField] private LayerMaskOptional _otherLayer;
         [SerializeField] private BitTagOptional _otherTag;
-        
-        [SerializeField] private bool _showGroundCheck;
 
         private Vector2 _collisionNormal;
         
@@ -50,12 +48,21 @@ namespace Incandescent.Components
 
         private void Update()
         {
+            old();
+        }
+
+        private void old()
+        {
+            var pos = _coll.bounds.center;
+            pos.y -= _coll.bounds.extents.y;
+            
+            // Debug.Log($"Collision Check Position: {pos} | Frame: {Time.frameCount}");
             Collider2D hit;
             if (_otherLayer.Enabled)
-                hit = Physics2D.OverlapBox(_collisionCheck.position, _collisionCheckSize, 0f, _otherLayer.Value);
+                hit = Physics2D.OverlapBox(_coll.bounds.center, _coll.bounds.size, 0f, _otherLayer.Value);
             else
-                hit = Physics2D.OverlapBox(_collisionCheck.position, _collisionCheckSize, 0f);
-
+                hit = Physics2D.OverlapBox(_coll.bounds.center, _coll.bounds.size, 0f);
+            
             if (hit == null)
             {
                 _isColliding = false;
@@ -64,7 +71,7 @@ namespace Incandescent.Components
             else
             {
                 // Figure out the collision normal
-                _collisionNormal = hit.ClosestPoint(_collisionCheck.position) - (Vector2) _collisionCheck.position;
+                // _collisionNormal = hit.ClosestPoint(_collisionCheck.position) - (Vector2) _collisionCheck.position;
                 
                 if (_otherTag.Enabled)
                 {
@@ -82,19 +89,13 @@ namespace Incandescent.Components
             }
             
             if (_isColliding && !_wasColliding)
+            {
                 OnEnterGround?.Invoke();
+            }
             else if (!_isColliding && _wasColliding)
                 OnExitGround?.Invoke();
-
-            _wasColliding = _isColliding;
-        }
-        
-        private void OnDrawGizmos()
-        {
-            if (!_showGroundCheck) return;
             
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireCube(_collisionCheck.position, _collisionCheckSize);
+            _wasColliding = _isColliding;
         }
     }
 }
