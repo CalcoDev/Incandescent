@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using Cinemachine;
 using Incandescent.Components;
 using Incandescent.Core.Helpers;
 using Incandescent.Managers.Inputs.Generated;
@@ -67,6 +68,7 @@ namespace Incandescent.GameObjects.Entities
 
         private Vector2 _lastNonZeroDir = Vector2.right;
         private Vector2 _dashDir;
+        private bool _groundDash;
 
         private void Awake()
         {
@@ -213,6 +215,10 @@ namespace Incandescent.GameObjects.Entities
         {
             _rb.velocity = Vector2.zero;
             _dashDir = Vector2.zero;
+            
+            _groundDash = false;
+            if (_groundedComp.IsColliding)
+                _groundDash = true;
 
             var dashParticlesEmission = _dashFx.emission;
             dashParticlesEmission.enabled = true;
@@ -225,7 +231,7 @@ namespace Incandescent.GameObjects.Entities
 
         private int DashUpdate()
         {
-            if (_collidingWithGroundComp.IsColliding)
+            if (_collidingWithGroundComp.IsColliding && !(_groundedComp.IsColliding && _groundDash))
                 return StNormal;
 
             return StDash;
@@ -234,7 +240,7 @@ namespace Incandescent.GameObjects.Entities
         private void DashExit()
         {
             _dashCooldownTimer.SetTimer(DashCooldown);
-            
+
             var dashParticlesEmission = _dashFx.emission;
             dashParticlesEmission.enabled = false;
             
@@ -249,7 +255,7 @@ namespace Incandescent.GameObjects.Entities
             yield return null;
 
             _dashDir = _lastNonZeroDir;
-            
+
             Vector2 speed = _dashDir * DashSpeed;
             Vector2 vel = _rb.velocity;
             
@@ -260,7 +266,6 @@ namespace Incandescent.GameObjects.Entities
             _rb.velocity = speed;
             
             // TODO(calco): Camera shake
-
             yield return new WaitForSeconds(DashTime);
 
             _stateMachine.SetState(StNormal);
