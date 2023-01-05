@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using Cinemachine;
 using Incandescent.Components;
 using Incandescent.Core.Helpers;
 using Incandescent.Managers.Inputs.Generated;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Incandescent.GameObjects.Entities
 {
@@ -11,11 +14,8 @@ namespace Incandescent.GameObjects.Entities
     {
         [Header("Refs")]
         [SerializeField] private CollisionCheckerComponent _groundedComp;
-        [SerializeField] private CollisionCheckerComponent _collidingWithGroundComp;
-        [SerializeField] private TimerComponent _coyoteTimer;
-        [SerializeField] private TimerComponent _jumpBufferTimer;
-        [SerializeField] private TimerComponent _variableJumpTimer;
-        [SerializeField] private TimerComponent _dashCooldownTimer;
+        [SerializeField] private CollisionCheckerComponent _collidingWithCeilingComp;
+        
         [SerializeField] private StateMachineComponent _stateMachine;
         [SerializeField] private Rigidbody2D _rb;
 
@@ -24,6 +24,10 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private float MaxFall = 25f;
         
         [Header("Jump")]
+        [SerializeField] private TimerComponent _coyoteTimer;
+        [SerializeField] private TimerComponent _jumpBufferTimer;
+        [SerializeField] private TimerComponent _variableJumpTimer;
+        
         [SerializeField] private float JumpForce = 34f;
         [SerializeField] private float JumpHBoost = 13f;
         [Range(0f, 0.2f)] [SerializeField] private float CoyoteTime = 0.1f;
@@ -39,9 +43,28 @@ namespace Incandescent.GameObjects.Entities
         [SerializeField] private float RunReduce = 62f;
         
         [Header("Dash")]
+        [SerializeField] private TimerComponent _dashCooldownTimer;
+
+        [SerializeField] private ParticleSystem _dashFx;
+        [SerializeField] private ParticleSystem _dashTrailFx;
+        [SerializeField] private TrailRenderer _dashTrail;
+        
         [SerializeField] private float DashCooldown = 0.2f;
         [SerializeField] private float DashSpeed = 38;
         [SerializeField] private float DashTime = 0.15f;
+        
+        [Header("Leap")]
+        [SerializeField] private ParticleSystem _leapAttackFx;
+        [SerializeField] private TrailRenderer _leapAttackTrail;
+        [SerializeField] private ParticleSystem _leapSustainFx;
+        [SerializeField] private ParticleSystem _leapPerformFx;
+        [SerializeField] private TrailRenderer _leapPerformTrail;
+
+        [SerializeField] private float LeapSustainTime = 2f;
+        [SerializeField] private float LeapAttackSpeed = 20f;
+        [SerializeField] private float LeapPerformSpeed = 30f;
+        [SerializeField] private float LeapPerformDistance = 5f;
+        [Range(0f, 1f)] [SerializeField] private float LeapEndSpeedMultiplier = 0.25f;
 
         // Input
         private InputActions _inputActions;
@@ -53,14 +76,32 @@ namespace Incandescent.GameObjects.Entities
         
         private bool _inputDashDown;
 
+        private bool _inputPrimaryDown;
+        private bool _inputSecondaryDown;
+
+        private Vector2 _inputMousePos;
+
+        private Vector2 _lastNonZeroDir = Vector2.right;
+
         // States
         private const int StNormal = 0;
         private const int StDash = 1;
-
+        private const int StLeap = 2;
+        
         private bool _isJumping;
 
+        // Dash
         private Vector2 _dashDir;
+        private bool _groundDash;
         
+        // Leap
+        private bool _leapAttack;
+        private bool _leapSustain;
+        private bool _leapPerformed;
+
+        private bool _collidingWithGroundOnAnySide;
+        private Vector2 _collisionNormal;
+
         private void Awake()
         {
             _inputActions = new InputActions();
@@ -69,6 +110,7 @@ namespace Incandescent.GameObjects.Entities
             _stateMachine.Init(3, 0);
             _stateMachine.SetCallbacks(StNormal, NormalUpdate, null, null, NormalFixedUpdate);
             _stateMachine.SetCallbacks(StDash, DashUpdate, DashEnter, DashExit, null, DashCoroutine);
+            _stateMachine.SetCallbacks(StLeap, null, LeapEnter, null, null, LeapCoroutine);
         }
 
         private void OnDisable()
@@ -78,6 +120,13 @@ namespace Incandescent.GameObjects.Entities
 
         private void Start()
         {
+            var dashParticlesEmission = _dashFx.emission;
+            var emissionModule = _dashTrailFx.emission;
+
+            dashParticlesEmission.enabled = false;
+            emissionModule.enabled = false;
+            _dashTrail.emitting = false;
+
             _coyoteTimer.UpdateAutomatically = false;
             
             _groundedComp.OnEnterGround += () =>
@@ -105,16 +154,62 @@ namespace Incandescent.GameObjects.Entities
         {
             _stateMachine.RunFixedUpdate();
         }
-        
+
+        private void OnCollisionEnter2D(Collision2D col)
+        {
+            BitTagComponent bitTag = col.gameObject.GetComponent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = col.gameObject.GetComponentInParent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = col.gameObject.GetComponentInChildren<BitTagComponent>();
+
+            if (bitTag == null)
+                return;
+            
+            _collidingWithGroundOnAnySide = bitTag.HasTagString("Ground");
+
+            Collider2D b = col.otherCollider;
+            Collider2D a = col.collider;
+            ColliderDistance2D d = a.Distance(b);
+            _collisionNormal = d.normal;
+        }
+
+        private void OnCollisionExit2D(Collision2D other)
+        {
+            BitTagComponent bitTag = other.gameObject.GetComponent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = other.gameObject.GetComponentInParent<BitTagComponent>();
+            if (bitTag == null)
+                bitTag = other.gameObject.GetComponentInChildren<BitTagComponent>();
+
+            if (bitTag == null)
+                return;
+
+            if (!bitTag.HasTagString("Ground"))
+                return;
+            
+            _collidingWithGroundOnAnySide = false;
+            _collisionNormal = Vector2.zero;
+        }
+
         private void PollInput()
         {
             _inputX = _inputActions.map_gameplay.axis_horizontal.ReadValue<float>();
+
+            if (!Calc.FloatEquals(_inputX, 0f))
+                _lastNonZeroDir.x = _inputX;
             
             _inputJumpDown = _inputActions.map_gameplay.btn_jump.WasPressedThisFrame();
             _inputJumpUp = _inputActions.map_gameplay.btn_jump.WasReleasedThisFrame();
             _inputJumpHeld = _inputActions.map_gameplay.btn_jump.IsPressed();
             
             _inputDashDown = _inputActions.map_gameplay.btn_dash.WasPressedThisFrame();
+            
+            _inputPrimaryDown = _inputActions.map_gameplay.btn_primaryAttack.WasPressedThisFrame();
+            _inputSecondaryDown = _inputActions.map_gameplay.btn_seconadryAttack.WasPressedThisFrame();
+
+            Vector2 mouseScreenPos = _inputActions.map_gameplay.pos_mouse.ReadValue<Vector2>();
+            _inputMousePos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
         }
 
         #region States
@@ -125,6 +220,12 @@ namespace Incandescent.GameObjects.Entities
             if (_inputDashDown && _dashCooldownTimer.HasFinished())
                 return StDash;
             
+            if (_inputPrimaryDown)
+                Debug.Log("Primary");
+
+            if (_inputSecondaryDown)
+                return StLeap;
+
             // Timers
             _dashCooldownTimer.UpdateTimer(Time.deltaTime);
             
@@ -195,12 +296,24 @@ namespace Incandescent.GameObjects.Entities
         private void DashEnter()
         {
             _rb.velocity = Vector2.zero;
-            _dashDir = new Vector2(_inputX, 0f).normalized;
+            _dashDir = Vector2.zero;
+            
+            _groundDash = false;
+            if (_groundedComp.IsColliding)
+                _groundDash = true;
+
+            var dashParticlesEmission = _dashFx.emission;
+            dashParticlesEmission.enabled = true;
+
+            var emissionModule = _dashTrailFx.emission;
+            emissionModule.enabled = true;
+            
+            _dashTrail.emitting = true;
         }
 
         private int DashUpdate()
         {
-            if (_collidingWithGroundComp.IsColliding)
+            if (_collidingWithGroundOnAnySide && !(_groundedComp.IsColliding && _groundDash))
                 return StNormal;
 
             return StDash;
@@ -209,14 +322,25 @@ namespace Incandescent.GameObjects.Entities
         private void DashExit()
         {
             _dashCooldownTimer.SetTimer(DashCooldown);
+
+            var dashParticlesEmission = _dashFx.emission;
+            dashParticlesEmission.enabled = false;
+            
+            var emissionModule = _dashTrailFx.emission;
+            emissionModule.enabled = false;
+
+            _dashTrail.emitting = false;
         }
 
         private IEnumerator DashCoroutine()
         {
             yield return null;
 
+            _dashDir = _lastNonZeroDir;
+
             Vector2 speed = _dashDir * DashSpeed;
             Vector2 vel = _rb.velocity;
+            
             // Dashing in same dir as momentum and already going faster
             if (Calc.SameSign(vel.x, speed.x) && Mathf.Abs(vel.x) > Mathf.Abs(speed.x))
                 speed.x = vel.x;
@@ -224,9 +348,111 @@ namespace Incandescent.GameObjects.Entities
             _rb.velocity = speed;
             
             // TODO(calco): Camera shake
-
             yield return new WaitForSeconds(DashTime);
 
+            _stateMachine.SetState(StNormal);
+        }
+
+        private void LeapEnter()
+        {
+            _rb.velocity = Vector2.zero;
+
+            _leapAttack = false;
+            _leapSustain = false;
+            _leapPerformed = false;
+        }
+
+        private IEnumerator LeapCoroutine()
+        {
+            yield return null;
+            
+            // Go straight up 8 units, or until we hit something
+            _leapAttack = true;
+
+            var emissionModule = _leapAttackFx.emission;
+            emissionModule.enabled = true;
+            _leapAttackTrail.emitting = true;
+            
+            Vector2 targetPos = _rb.position + Vector2.up * 8f;
+            _rb.velocity = Vector2.up * LeapAttackSpeed;
+            
+            while (_rb.position.y < targetPos.y)
+            {
+                if (_collidingWithCeilingComp.IsColliding)
+                {
+                    Debug.Log("Collided with ceiling.");
+                    break;
+                }
+
+                yield return null;
+            }
+
+            _rb.velocity = Vector2.zero;
+            
+            _leapAttack = false;
+            emissionModule.enabled = false;
+            _leapAttackTrail.emitting = false;
+            
+            _leapSustain = true;
+            emissionModule = _leapSustainFx.emission;
+            emissionModule.enabled = true;
+            
+            float time = 0f;
+            bool used = false;
+            while (time < LeapSustainTime)
+            {
+                if (_inputPrimaryDown)
+                {
+                    used = true;
+                    break;
+                }
+
+                time += Time.deltaTime;
+                yield return null;
+            }
+            if (!used)
+            {
+                _stateMachine.SetState(StNormal);
+                yield break;
+            }
+
+            _leapSustain = false;
+            emissionModule.enabled = false;
+            
+            _leapPerformed = true;
+            emissionModule = _leapPerformFx.emission;
+            emissionModule.enabled = true;
+            _leapPerformTrail.emitting = true;
+
+            Vector2 dir = (_inputMousePos - _rb.position - Vector2.up).normalized;
+            dir = dir.normalized;
+            _lastNonZeroDir = new Vector2(dir.x, 0f).normalized;
+            
+            _rb.velocity = dir * LeapPerformSpeed;
+
+            targetPos = _rb.position + dir * LeapPerformDistance;
+            while ((targetPos - _rb.position).sqrMagnitude > 1f)
+            {
+                if (_collidingWithGroundOnAnySide)
+                {
+                    Debug.Log($"Normal: {_collisionNormal} | Dir: {dir}");
+                    
+                    if (Calc.SameSignZero(_collisionNormal.x, dir.x) || Calc.SameSignZero(_collisionNormal.y, dir.y))
+                    {
+                        Debug.Log("Collided with ground.");
+                        break;
+                    }
+                }
+
+                yield return null;
+            }
+            
+            _rb.velocity *= LeapEndSpeedMultiplier;
+            
+            _leapPerformed = false;
+            emissionModule.enabled = false;
+            _leapPerformTrail.emitting = false;
+            
             _stateMachine.SetState(StNormal);
         }
 

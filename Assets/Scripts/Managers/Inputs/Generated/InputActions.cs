@@ -82,6 +82,15 @@ namespace Incandescent.Managers.Inputs.Generated
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""pos_mouse"",
+                    ""type"": ""Value"",
+                    ""id"": ""93148f7a-9a8e-4a46-b633-0ad8e1d03bf8"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -260,6 +269,17 @@ namespace Incandescent.Managers.Inputs.Generated
                     ""action"": ""axis_vertical"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""70595ee7-e949-4f4a-971f-f9c6c8eea98d"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""scheme_PC"",
+                    ""action"": ""pos_mouse"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -291,6 +311,7 @@ namespace Incandescent.Managers.Inputs.Generated
             m_map_gameplay_btn_seconadryAttack = m_map_gameplay.FindAction("btn_seconadryAttack", throwIfNotFound: true);
             m_map_gameplay_axis_horizontal = m_map_gameplay.FindAction("axis_horizontal", throwIfNotFound: true);
             m_map_gameplay_axis_vertical = m_map_gameplay.FindAction("axis_vertical", throwIfNotFound: true);
+            m_map_gameplay_pos_mouse = m_map_gameplay.FindAction("pos_mouse", throwIfNotFound: true);
         }
 
         public void Dispose()
@@ -356,6 +377,7 @@ namespace Incandescent.Managers.Inputs.Generated
         private readonly InputAction m_map_gameplay_btn_seconadryAttack;
         private readonly InputAction m_map_gameplay_axis_horizontal;
         private readonly InputAction m_map_gameplay_axis_vertical;
+        private readonly InputAction m_map_gameplay_pos_mouse;
         public struct Map_gameplayActions
         {
             private @InputActions m_Wrapper;
@@ -366,6 +388,7 @@ namespace Incandescent.Managers.Inputs.Generated
             public InputAction @btn_seconadryAttack => m_Wrapper.m_map_gameplay_btn_seconadryAttack;
             public InputAction @axis_horizontal => m_Wrapper.m_map_gameplay_axis_horizontal;
             public InputAction @axis_vertical => m_Wrapper.m_map_gameplay_axis_vertical;
+            public InputAction @pos_mouse => m_Wrapper.m_map_gameplay_pos_mouse;
             public InputActionMap Get() { return m_Wrapper.m_map_gameplay; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -393,6 +416,9 @@ namespace Incandescent.Managers.Inputs.Generated
                     @axis_vertical.started -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnAxis_vertical;
                     @axis_vertical.performed -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnAxis_vertical;
                     @axis_vertical.canceled -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnAxis_vertical;
+                    @pos_mouse.started -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnPos_mouse;
+                    @pos_mouse.performed -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnPos_mouse;
+                    @pos_mouse.canceled -= m_Wrapper.m_Map_gameplayActionsCallbackInterface.OnPos_mouse;
                 }
                 m_Wrapper.m_Map_gameplayActionsCallbackInterface = instance;
                 if (instance != null)
@@ -415,6 +441,9 @@ namespace Incandescent.Managers.Inputs.Generated
                     @axis_vertical.started += instance.OnAxis_vertical;
                     @axis_vertical.performed += instance.OnAxis_vertical;
                     @axis_vertical.canceled += instance.OnAxis_vertical;
+                    @pos_mouse.started += instance.OnPos_mouse;
+                    @pos_mouse.performed += instance.OnPos_mouse;
+                    @pos_mouse.canceled += instance.OnPos_mouse;
                 }
             }
         }
@@ -436,6 +465,7 @@ namespace Incandescent.Managers.Inputs.Generated
             void OnBtn_seconadryAttack(InputAction.CallbackContext context);
             void OnAxis_horizontal(InputAction.CallbackContext context);
             void OnAxis_vertical(InputAction.CallbackContext context);
+            void OnPos_mouse(InputAction.CallbackContext context);
         }
     }
 }

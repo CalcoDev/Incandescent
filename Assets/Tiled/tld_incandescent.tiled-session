@@ -1,16 +1,16 @@
 {
     "activeFile": "Tilemaps/tldMap_playground.tmx",
     "expandedProjectPaths": [
-        ".",
-        "Tilemaps"
+        "Tilemaps",
+        "."
     ],
     "fileStates": {
         "Tilemaps/tldMap_playground.tmx": {
             "scale": 1.8703124999999998,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 39.56558061821221,
-                "y": -28.872180451127804
+                "x": -62.021720969089415,
+                "y": -101.0526315789474
             }
         },
         "Tilesets/tldSet_graybox.tsx": {

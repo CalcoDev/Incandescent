@@ -58,6 +58,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "pos_mouse",
+                    "type": "Value",
+                    "id": "93148f7a-9a8e-4a46-b633-0ad8e1d03bf8",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -236,6 +245,17 @@
                     "action": "axis_vertical",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "70595ee7-e949-4f4a-971f-f9c6c8eea98d",
+                    "path": "<Mouse>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "scheme_PC",
+                    "action": "pos_mouse",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }
